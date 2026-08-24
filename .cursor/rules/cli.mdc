@@ -8,6 +8,8 @@ alwaysApply: false
 
 Every binary is a Cobra CLI. `main` only executes the root command. All runtime configuration goes through Viper (flags, env, optional config file). Do not parse `os.Args`, use `flag`, or read env vars directly in command code.
 
+Run the package (`go run ./obs/cmd/obs`), not a single file. `go run obs/cmd/obs/main.go` does not compile sibling files such as `root.go`.
+
 ```go
 // ❌ BAD
 func main() {

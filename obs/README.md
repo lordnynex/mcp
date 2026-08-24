@@ -9,6 +9,8 @@ go run ./obs/cmd/obs
 go run ./obs/cmd/obs --help
 ```
 
+Run the package directory, not a single file. `go run obs/cmd/obs/main.go` only compiles `main.go` and fails with `undefined: rootCmd`.
+
 The server speaks MCP on stdout. Logs go to stderr.
 
 ## Configuration
