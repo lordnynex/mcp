@@ -1,0 +1,18 @@
+---
+description: Never use Go internal/ directories
+alwaysApply: true
+---
+
+# No internal/ packages
+
+Never create or import a directory named `internal/` in this repo. Organize with ordinary sibling packages (`obs/tools`, `obs/session`, `lib/logger`).
+
+Do not use Go's `internal/` visibility trick to hide code. If something must not be imported by other servers, keep it unexported in the owning package, or accept that sibling packages are importable.
+
+```go
+// ❌ BAD
+obs/internal/session
+
+// ✅ GOOD
+obs/session
+```

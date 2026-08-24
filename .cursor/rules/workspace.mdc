@@ -11,6 +11,7 @@ This repo is a Go 1.27 workspace (`go.work`) with a root module `github.com/lord
 - Export `New() *mcp.Server` and `Register(*mcp.Server)` so servers run standalone or mount into an aggregate.
 - `cmd/<name>/` is a Cobra CLI. `main.go` only executes the root command. Do not put importable logic in `package main`.
 - Shared code lives under `lib/` workspace modules. Process logging uses `lib/logger`.
+- Never use an `internal/` directory. See [no-internal.mdc](no-internal.mdc).
 - Unit tests use gest.
 
 ```go
