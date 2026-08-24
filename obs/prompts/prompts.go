@@ -3,6 +3,7 @@ package prompts
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/andreykaipov/goobs/api/requests/scenes"
@@ -20,6 +21,9 @@ var AlwaysNames = []string{
 	"obs-subscribe-events",
 	"obs-start-stream",
 	"obs-start-record",
+	"obs-record-clip",
+	"obs-create-browser-source",
+	"obs-create-input",
 	"obs-request-batch",
 }
 
@@ -103,6 +107,80 @@ func RegisterAlways(s *mcp.Server, h *session.Host) {
 	})
 
 	add(s, &mcp.Prompt{
+		Name:        "obs-record-clip",
+		Title:       "Record a timed clip",
+		Description: "Record a finite clip, stop, restore the program scene, and return the file path.",
+		Arguments: []*mcp.PromptArgument{
+			{Name: "durationMs", Title: "Duration (ms)", Description: "Minimum recording duration in milliseconds", Required: true},
+			{Name: "sceneName", Title: "Scene name", Description: "Optional program scene to record; restore the previous scene after StopRecord"},
+		},
+	}, func(_ context.Context, req *mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+		ms, err := parseDurationMs(arg(req, "durationMs"))
+		if err != nil {
+			return nil, err
+		}
+		scene := arg(req, "sceneName")
+		text := fmt.Sprintf("Call GetRecordStatus. If outputActive is true, call StopRecord first so this clip is a new file. Call GetCurrentProgramScene and remember currentProgramSceneName. %sCall StartRecord immediately (recording tools never elicit). Poll GetRecordStatus.outputDuration until it is at least %d milliseconds. Call StopRecord and report outputPath. Restore the remembered program scene with SetCurrentProgramScene. Do not leave the record output running. If the tools are missing, call Connect first.", sceneSwitchSentence(scene), ms)
+		return userPrompt("Record a timed clip", text), nil
+	})
+
+	add(s, &mcp.Prompt{
+		Name:        "obs-create-browser-source",
+		Title:       "Create a browser source",
+		Description: "Create a transparent browser_source and verify it painted before recording.",
+		Arguments: []*mcp.PromptArgument{
+			{Name: "sceneName", Title: "Scene name", Description: "Scene that receives the new input", Required: true},
+			{Name: "inputName", Title: "Input name", Description: "Name of the new browser source", Required: true},
+			{Name: "url", Title: "URL", Description: "Page URL; omit when localFile is set"},
+			{Name: "localFile", Title: "Local file", Description: "Absolute HTML path; sets is_local_file"},
+			{Name: "width", Title: "Width", Description: "Browser width; default GetVideoSettings.baseWidth"},
+			{Name: "height", Title: "Height", Description: "Browser height; default GetVideoSettings.baseHeight"},
+		},
+	}, func(_ context.Context, req *mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+		scene := arg(req, "sceneName")
+		input := arg(req, "inputName")
+		if scene == "" {
+			return nil, fmt.Errorf("sceneName is required")
+		}
+		if input == "" {
+			return nil, fmt.Errorf("inputName is required")
+		}
+		page, err := browserPageSentence(arg(req, "url"), arg(req, "localFile"))
+		if err != nil {
+			return nil, err
+		}
+		size := browserSizeSentence(arg(req, "width"), arg(req, "height"))
+		text := fmt.Sprintf("Call GetInputDefaultSettings with inputKind \"browser_source\". %sCall CreateInput with sceneName %q, inputName %q, inputKind \"browser_source\", and inputSettings using %s, the resolved width/height, and the official default transparent CSS (body { background-color: rgba(0, 0, 0, 0); margin: 0px auto; overflow: hidden; }). There is no inject-JavaScript request; HTML and JS live in url or local_file. Prefer http(s) or is_local_file; file:// and data: URLs often stay blank on macOS CEF. After create, call GetSourceActive and GetSourceScreenshot or SaveSourceScreenshot on the new input before claiming success. If the page did not paint, do not StartRecord. If the tools are missing, call Connect first.", size, scene, input, page)
+		return userPrompt("Create a browser source", text), nil
+	})
+
+	add(s, &mcp.Prompt{
+		Name:        "obs-create-input",
+		Title:       "Create an input",
+		Description: "Create any input kind from official defaults and verify it before use.",
+		Arguments: []*mcp.PromptArgument{
+			{Name: "sceneName", Title: "Scene name", Description: "Scene that receives the new input", Required: true},
+			{Name: "inputName", Title: "Input name", Description: "Name of the new input", Required: true},
+			{Name: "inputKind", Title: "Input kind", Description: "Official input kind from GetInputKindList", Required: true},
+		},
+	}, func(_ context.Context, req *mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+		scene := arg(req, "sceneName")
+		input := arg(req, "inputName")
+		kind := arg(req, "inputKind")
+		if scene == "" {
+			return nil, fmt.Errorf("sceneName is required")
+		}
+		if input == "" {
+			return nil, fmt.Errorf("inputName is required")
+		}
+		if kind == "" {
+			return nil, fmt.Errorf("inputKind is required")
+		}
+		text := fmt.Sprintf("Call GetInputKindList if inputKind is uncertain; do not invent kinds. Call GetInputDefaultSettings with inputKind %q. Call CreateInput with sceneName %q, inputName %q, inputKind %q, and inputSettings overlaid on those defaults. If you later call SetSceneItemTransform, boundsWidth and boundsHeight must be at least 1 even when boundsType is OBS_BOUNDS_NONE. After create, call GetSourceActive and GetSourceScreenshot or SaveSourceScreenshot on the new input before claiming success. If the tools are missing, call Connect first.", kind, scene, input, kind)
+		return userPrompt("Create an input", text), nil
+	})
+
+	add(s, &mcp.Prompt{
 		Name:        "obs-request-batch",
 		Title:       "OBS request batch",
 		Description: "How to run several official requests in one call.",
@@ -150,6 +228,49 @@ func arg(req *mcp.GetPromptRequest, name string) string {
 		return ""
 	}
 	return strings.TrimSpace(req.Params.Arguments[name])
+}
+
+func parseDurationMs(s string) (int, error) {
+	if s == "" {
+		return 0, fmt.Errorf("durationMs is required")
+	}
+	n, err := strconv.Atoi(s)
+	if err != nil || n <= 0 {
+		return 0, fmt.Errorf("durationMs must be a positive integer")
+	}
+	return n, nil
+}
+
+func sceneSwitchSentence(scene string) string {
+	if scene == "" {
+		return "Leave the current program scene unchanged unless the user asked to record a different scene. "
+	}
+	return fmt.Sprintf("Call SetCurrentProgramScene with sceneName %q. ", scene)
+}
+
+func browserPageSentence(url, localFile string) (string, error) {
+	switch {
+	case localFile != "":
+		return fmt.Sprintf("is_local_file true and local_file %q", localFile), nil
+	case url != "":
+		return fmt.Sprintf("url %q", url), nil
+	default:
+		return "", fmt.Errorf("url or localFile is required")
+	}
+}
+
+func browserSizeSentence(width, height string) string {
+	if width == "" && height == "" {
+		return "If width or height were omitted, call GetVideoSettings and use baseWidth/baseHeight. "
+	}
+	parts := make([]string, 0, 2)
+	if width != "" {
+		parts = append(parts, "width "+width)
+	}
+	if height != "" {
+		parts = append(parts, "height "+height)
+	}
+	return "Use " + strings.Join(parts, " and ") + " from the prompt arguments; call GetVideoSettings only for a missing dimension. "
 }
 
 func userPrompt(desc, text string) *mcp.GetPromptResult {

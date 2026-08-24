@@ -35,6 +35,72 @@ func TestPrompts(t *testing.T) {
 			t.Require(err).To(gest.BeNil())
 			t.Expect(promptNames(res)).To(gest.Contain("obs-current-program"))
 		})
+
+		s.It("obs-record-clip requires durationMs and restores the scene", func(t *gest.T) {
+			sess := connectClient(t, New(), nil)
+			_, err := sess.GetPrompt(t.Context(), &mcp.GetPromptParams{Name: "obs-record-clip"})
+			t.Expect(err).NotTo(gest.BeNil())
+
+			res, err := sess.GetPrompt(t.Context(), &mcp.GetPromptParams{
+				Name: "obs-record-clip",
+				Arguments: map[string]string{
+					"durationMs": "5000",
+					"sceneName":  "hello-world",
+				},
+			})
+			t.Require(err).To(gest.BeNil())
+			text := promptText(res)
+			t.Expect(text).To(gest.Contain("5000"))
+			t.Expect(text).To(gest.Contain("hello-world"))
+			t.Expect(text).To(gest.Contain("StopRecord"))
+			t.Expect(text).To(gest.Contain("outputPath"))
+			t.Expect(text).To(gest.Contain("SetCurrentProgramScene"))
+		})
+
+		s.It("obs-create-browser-source requires a page and verifies paint", func(t *gest.T) {
+			sess := connectClient(t, New(), nil)
+			_, err := sess.GetPrompt(t.Context(), &mcp.GetPromptParams{
+				Name: "obs-create-browser-source",
+				Arguments: map[string]string{
+					"sceneName": "hello-world",
+					"inputName": "Overlay",
+				},
+			})
+			t.Expect(err).NotTo(gest.BeNil())
+
+			res, err := sess.GetPrompt(t.Context(), &mcp.GetPromptParams{
+				Name: "obs-create-browser-source",
+				Arguments: map[string]string{
+					"sceneName": "hello-world",
+					"inputName": "Overlay",
+					"url":       "https://example.com",
+				},
+			})
+			t.Require(err).To(gest.BeNil())
+			text := promptText(res)
+			t.Expect(text).To(gest.Contain("browser_source"))
+			t.Expect(text).To(gest.Contain("https://example.com"))
+			t.Expect(text).To(gest.Contain("GetSourceScreenshot"))
+			t.Expect(text).To(gest.Contain("do not StartRecord"))
+		})
+
+		s.It("obs-create-input requires kind and mentions transform bounds", func(t *gest.T) {
+			sess := connectClient(t, New(), nil)
+			res, err := sess.GetPrompt(t.Context(), &mcp.GetPromptParams{
+				Name: "obs-create-input",
+				Arguments: map[string]string{
+					"sceneName": "hello-world",
+					"inputName": "Hello World Text",
+					"inputKind": "text_ft2_source_v2",
+				},
+			})
+			t.Require(err).To(gest.BeNil())
+			text := promptText(res)
+			t.Expect(text).To(gest.Contain("text_ft2_source_v2"))
+			t.Expect(text).To(gest.Contain("GetInputDefaultSettings"))
+			t.Expect(text).To(gest.Contain("boundsWidth"))
+			t.Expect(text).To(gest.Contain("GetSourceScreenshot"))
+		})
 	})
 }
 
@@ -64,14 +130,16 @@ func TestCompletions(t *testing.T) {
 		})
 
 		s.It("returns no scene names when OBS is disconnected", func(t *gest.T) {
-			res, err := complete.HandleHost(t.Context(), session.New(), &mcp.CompleteRequest{
-				Params: &mcp.CompleteParams{
-					Ref:      &mcp.CompleteReference{Type: "ref/prompt", Name: "obs-switch-scene"},
-					Argument: mcp.CompleteParamsArgument{Name: "sceneName", Value: ""},
-				},
-			})
-			t.Require(err).To(gest.BeNil())
-			t.Expect(res.Completion.Values).To(gest.Equal([]string{}))
+			for _, name := range []string{"obs-switch-scene", "obs-record-clip", "obs-create-browser-source", "obs-create-input"} {
+				res, err := complete.HandleHost(t.Context(), session.New(), &mcp.CompleteRequest{
+					Params: &mcp.CompleteParams{
+						Ref:      &mcp.CompleteReference{Type: "ref/prompt", Name: name},
+						Argument: mcp.CompleteParamsArgument{Name: "sceneName", Value: ""},
+					},
+				})
+				t.Require(err).To(gest.BeNil())
+				t.Expect(res.Completion.Values).To(gest.Equal([]string{}))
+			}
 		})
 	})
 }
@@ -162,4 +230,15 @@ func promptNames(res *mcp.ListPromptsResult) []string {
 		names = append(names, p.Name)
 	}
 	return names
+}
+
+func promptText(res *mcp.GetPromptResult) string {
+	if res == nil || len(res.Messages) == 0 || res.Messages[0] == nil {
+		return ""
+	}
+	text, _ := res.Messages[0].Content.(*mcp.TextContent)
+	if text == nil {
+		return ""
+	}
+	return text.Text
 }

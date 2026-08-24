@@ -40,7 +40,7 @@ func HandleHost(_ context.Context, h *session.Host, req *mcp.CompleteRequest) (*
 func completePrompt(h *session.Host, prompt, arg, prefix string) (*mcp.CompleteResult, error) {
 	var values []string
 	switch {
-	case prompt == "obs-switch-scene" && arg == "sceneName":
+	case sceneNamePrompt(prompt) && arg == "sceneName":
 		values = sceneNames(h, prefix)
 	case prompt == "obs-subscribe-events" && arg == "category":
 		values = prefixMatch(slices.Sorted(maps.Keys(protocol.EventCategories)), prefix)
@@ -57,6 +57,15 @@ func completeResource(uri, prefix string) (*mcp.CompleteResult, error) {
 		return completeResult(nil), nil
 	}
 	return completeResult(prefixMatch(protocol.EventNames, prefix)), nil
+}
+
+func sceneNamePrompt(name string) bool {
+	switch name {
+	case "obs-switch-scene", "obs-record-clip", "obs-create-browser-source", "obs-create-input":
+		return true
+	default:
+		return false
+	}
 }
 
 func sceneNames(h *session.Host, prefix string) []string {

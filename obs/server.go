@@ -19,7 +19,7 @@ const (
 	Title   = "OBS Studio"
 )
 
-const instructions = `This server controls OBS Studio over obs-websocket. Call Connect before any OBS request tools appear (notifications/tools/list_changed). Use SubscribeEvents then resources/subscribe or subscriptions/listen on the returned obs://events/{eventType} URIs. Prompts: obs-connect, obs-switch-scene, obs-studio-status, obs-subscribe-events, obs-start-stream, obs-start-record, obs-request-batch. StartStream asks for confirmation via elicitation. Recording tools never elicit. Sleep is only valid inside RequestBatch with SerialRealtime.`
+const instructions = `This server controls OBS Studio over obs-websocket. Call Connect before any OBS request tools appear (notifications/tools/list_changed). Use SubscribeEvents then resources/subscribe or subscriptions/listen on the returned obs://events/{eventType} URIs. Prompts: obs-connect, obs-switch-scene, obs-studio-status, obs-subscribe-events, obs-start-stream, obs-start-record, obs-record-clip, obs-create-browser-source, obs-create-input, obs-request-batch. StartStream asks for confirmation via elicitation. Recording tools never elicit. Sleep is only valid inside RequestBatch with SerialRealtime.`
 
 var schemaCache = mcp.NewSchemaCache()
 

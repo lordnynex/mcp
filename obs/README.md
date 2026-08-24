@@ -91,8 +91,8 @@ This server is written as a current-protocol reference (MCP 2026-07-28 and the G
 
 - **Instructions** — connect-first workflow, event subscribe, and prompt names.
 - **Implementation metadata** — `title`, `description`, and `websiteUrl` in addition to name/version.
-- **Prompts** — `obs-connect`, `obs-switch-scene`, `obs-studio-status`, `obs-subscribe-events`, `obs-start-stream`, `obs-start-record`, `obs-request-batch`. After Connect, `obs-current-program` is added (`notifications/prompts/list_changed`).
-- **Completions** — `completion/complete` for `obs-switch-scene` scene names (when connected), `obs-subscribe-events` categories, and `obs://events/{eventType}` event names.
+- **Prompts** — `obs-connect`, `obs-switch-scene`, `obs-studio-status`, `obs-subscribe-events`, `obs-start-stream`, `obs-start-record`, `obs-record-clip`, `obs-create-browser-source`, `obs-create-input`, `obs-request-batch`. After Connect, `obs-current-program` is added (`notifications/prompts/list_changed`).
+- **Completions** — `completion/complete` for scene names on `obs-switch-scene`, `obs-record-clip`, `obs-create-browser-source`, and `obs-create-input` (when connected), `obs-subscribe-events` categories, and `obs://events/{eventType}` event names.
 - **Progress** — `notifications/progress` on `Connect`, `RequestBatch`, and `GetSourceScreenshot` when the client sends a progress token.
 - **Elicitation** — `StartStream` only. Clients that cannot elicit can still record.
 - **Pagination** — `tools/list` uses `--page-size` (default 50) so the full protocol tool list is cursor-paginated.
