@@ -1,0 +1,33 @@
+---
+description: Unit tests use gest
+globs: "**/*_test.go"
+alwaysApply: false
+---
+
+# Testing
+
+Write unit tests with [gest](https://github.com/lordnynex/gest). Keep a standard `TestXxx(*testing.T)` entry that calls `gest.Run`. Do not add other assertion libraries. Do not use `cmp.Diff` or `t.Fatal("wrong")` style checks.
+
+- Structure suites with `Describe` / `Context` / `When` / `It`. Use `DescribeTable` for table cases.
+- Assert with `t.Expect` / `t.Require` and gest matchers (`Equal`, `BeNil`, `Contain`).
+- Use `t.Parallel()` when tests do not share mutable state.
+- Use `t.Context()` for cancelable work. Put fixtures in `testdata/`.
+- Cover exported behavior, including error paths.
+
+```go
+// ❌ BAD
+func TestNew(t *testing.T) {
+    if New() == nil {
+        t.Fatal("wrong")
+    }
+}
+
+// ✅ GOOD
+func TestNew(t *testing.T) {
+    gest.Run(t, "New", func(s *gest.S) {
+        s.It("returns a server", func(t *gest.T) {
+            t.Expect(New()).NotTo(gest.BeNil())
+        })
+    })
+}
+```

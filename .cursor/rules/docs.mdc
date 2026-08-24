@@ -1,0 +1,17 @@
+---
+description: Per-server README and root server table
+alwaysApply: true
+---
+
+# Docs
+
+Every MCP server package has a `README.md`. The root [`README.md`](README.md) lists servers in a table that links to that file. Adding, renaming, or removing a server updates the table in the same change.
+
+```markdown
+<!-- ❌ BAD — server exists with no docs and no table row -->
+
+<!-- ✅ GOOD -->
+| Server | Description | Docs |
+| --- | --- | --- |
+| obs | OBS Studio MCP server | [obs/README.md](obs/README.md) |
+```

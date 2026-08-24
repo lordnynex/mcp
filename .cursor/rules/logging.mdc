@@ -1,0 +1,26 @@
+---
+description: slog-only logging via lib/logger
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# Logging
+
+Use `log/slog` only. Build process loggers with `github.com/lordnynex/mcp/lib/logger`. Never import `"log"`. MCP servers must log to stderr so stdout stays free for stdio transport.
+
+```go
+// ❌ BAD
+import "log"
+
+log.Fatal(err)
+
+// ✅ GOOD
+import (
+    "log/slog"
+
+    "github.com/lordnynex/mcp/lib/logger"
+)
+
+logger.SetDefault(logger.Options{Level: slog.LevelInfo})
+slog.Error("command failed", "err", err)
+```

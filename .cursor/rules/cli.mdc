@@ -1,0 +1,35 @@
+---
+description: Cobra CLIs and Viper runtime configuration
+globs: "**/cmd/**/*.go"
+alwaysApply: false
+---
+
+# CLI
+
+Every binary is a Cobra CLI. `main` only executes the root command. All runtime configuration goes through Viper (flags, env, optional config file). Do not parse `os.Args`, use `flag`, or read env vars directly in command code.
+
+```go
+// ❌ BAD
+func main() {
+    level := os.Getenv("OBS_LOG_LEVEL")
+    _ = obs.New().Run(context.Background(), &mcp.StdioTransport{})
+}
+
+// ✅ GOOD
+func main() {
+    if err := rootCmd.ExecuteContext(context.Background()); err != nil {
+        slog.Error("command failed", "err", err)
+        os.Exit(1)
+    }
+}
+
+var rootCmd = &cobra.Command{
+    Use: "obs",
+    PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+        return initConfig()
+    },
+    RunE: func(cmd *cobra.Command, args []string) error {
+        return obs.New().Run(cmd.Context(), &mcp.StdioTransport{})
+    },
+}
+```

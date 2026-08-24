@@ -1,0 +1,33 @@
+---
+description: Modern Go 1.27 coding standards
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# Go standards
+
+Target Go 1.27. Prefer current stdlib and language features over older patterns.
+
+- Use generic functions and methods when they remove duplication; do not force generics onto a single concrete type.
+- Prefer `slices`, `maps`, `cmp`, `log/slog`, `encoding/json/v2`, and `uuid` over hand-rolled or third-party equivalents.
+- Never import `"log"`. Use `log/slog` and `github.com/lordnynex/mcp/lib/logger`.
+- Accept `context.Context` as the first parameter of blocking or cancelable functions.
+- Wrap errors with `%w`. Return sentinel or typed errors callers can inspect.
+- Define interfaces at the consumer, not the producer.
+- Run `gofmt` and `go vet` on changed packages.
+
+```go
+// ❌ BAD
+func keys(m map[string]int) []string {
+    out := make([]string, 0, len(m))
+    for k := range m {
+        out = append(out, k)
+    }
+    return out
+}
+
+// ✅ GOOD
+func keys[M ~map[K]V, K comparable, V any](m M) []K {
+    return slices.Collect(maps.Keys(m))
+}
+```

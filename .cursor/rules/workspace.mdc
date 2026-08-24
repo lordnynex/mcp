@@ -1,0 +1,29 @@
+---
+description: Workspace layout for MCP server modules
+alwaysApply: true
+---
+
+# Workspace layout
+
+This repo is a Go 1.27 workspace (`go.work`) with a root module `github.com/lordnynex/mcp`. Each top-level directory except `lib/` is one MCP server package: `github.com/lordnynex/mcp/<name>`. Run `go test ./...` from the repo root. Add a nested workspace module only when a library needs its own go.mod.
+
+- Put importable server logic in `package <name>` at the module root.
+- Export `New() *mcp.Server` and `Register(*mcp.Server)` so servers run standalone or mount into an aggregate.
+- `cmd/<name>/` is a Cobra CLI. `main.go` only executes the root command. Do not put importable logic in `package main`.
+- Shared code lives under `lib/` workspace modules. Process logging uses `lib/logger`.
+- Unit tests use gest.
+
+```go
+// ✅ GOOD — library package, mountable
+func New() *mcp.Server {
+    s := mcp.NewServer(&mcp.Implementation{Name: Name, Version: Version}, nil)
+    Register(s)
+    return s
+}
+
+// ❌ BAD — tools only exist in package main; cannot be mounted later
+func main() {
+    s := mcp.NewServer(...)
+    mcp.AddTool(s, ...)
+}
+```
