@@ -5,6 +5,7 @@ A Go 1.27 workspace of Model Context Protocol (MCP) servers. The root module is 
 ```bash
 go test ./...
 go run ./obs/cmd/obs --help
+go run -tags purego ./robotgo/cmd/robotgo --help
 ```
 
 Shared libraries live under `lib/`. Process logs use `log/slog` via [`lib/logger`](lib/logger). CLIs are built with Cobra and configured with Viper.
@@ -14,3 +15,4 @@ Shared libraries live under `lib/`. Process logs use `log/slog` via [`lib/logger
 | Server | Description | Docs |
 | --- | --- | --- |
 | obs | OBS Studio MCP server | [obs/README.md](obs/README.md) |
+| robotgo | Desktop automation (keyboard, mouse, screenshots) | [robotgo/README.md](robotgo/README.md) |

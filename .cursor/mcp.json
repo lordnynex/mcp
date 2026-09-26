@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "obs": {
+      "type": "stdio",
+      "command": "go",
+      "args": ["run", "${workspaceFolder}/obs/cmd/obs"]
+    },
+    "robotgo": {
+      "type": "stdio",
+      "command": "go",
+      "args": ["run", "-tags", "robotgocgo", "${workspaceFolder}/robotgo/cmd/robotgo"],
+      "env": {
+        "CGO_ENABLED": "1",
+        "ROBOTGO_LOG_LEVEL": "info"
+      }
+    }
+  }
+}
